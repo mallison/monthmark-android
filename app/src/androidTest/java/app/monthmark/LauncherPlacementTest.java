@@ -77,7 +77,7 @@ public class LauncherPlacementTest {
             UiObject2 header=device.wait(Until.findObject(By.text("Monthmark")),5000);
             if(header!=null) header.click();
             device.waitForIdle(); capture("picker");
-            UiObject2 preview=device.wait(Until.findObject(By.res(launcher,"widget_preview")),5000);
+            UiObject2 preview=device.wait(Until.findObject(By.res(launcher,"widget_preview_container")),10000);
             assertNotNull("Monthmark widget preview missing",preview);
             preview.drag(new Point(device.getDisplayWidth()/2,device.getDisplayHeight()/3),500);
             capture("after-drop");
