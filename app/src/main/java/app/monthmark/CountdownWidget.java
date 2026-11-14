@@ -112,7 +112,8 @@ public class CountdownWidget extends AppWidgetProvider {
                 views.setTextViewText(R.id.widget_title,event.title);
                 views.setTextViewText(R.id.widget_days,Long.toString(Math.abs(days)));
                 views.setTextViewText(R.id.widget_unit, days == 0 ? "today" : days < 0 ? "days ago" : days == 1 ? "day to go" : "days to go");
-                views.setTextViewText(R.id.widget_date,event.target(today).format(DateTimeFormatter.ofPattern("EEE, d MMM",Locale.getDefault()))+(events.size()>1 ? "  ·  +"+(events.size()-1)+" more" : ""));
+                String datePattern=events.size()>1 ? "d MMM" : "EEE, d MMM";
+                views.setTextViewText(R.id.widget_date,event.target(today).format(DateTimeFormatter.ofPattern(datePattern,Locale.getDefault()))+(events.size()>1 ? "  ·  +"+(events.size()-1)+" more" : ""));
                 views.setTextColor(R.id.widget_days,MainActivity.ACCENTS[Math.floorMod(event.color,MainActivity.ACCENTS.length)]);
                 open.putExtra("event_id",event.id);
             }
