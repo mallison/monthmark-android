@@ -74,10 +74,10 @@ public class LauncherPlacementTest {
             required(By.text("Widgets")).click();
             UiObject2 search=device.wait(Until.findObject(By.clazz("android.widget.EditText")),5000);
             if(search!=null) search.setText("Monthmark");
-            UiObject2 header=device.wait(Until.findObject(By.text("Monthmark")),5000);
+            UiObject2 header=device.wait(Until.findObject(By.res("com.google.android.apps.nexuslauncher","app_title").text("Monthmark")),5000);
             if(header!=null) header.click();
             device.waitForIdle(); capture("picker");
-            UiObject2 preview=device.wait(Until.findObject(By.res(launcher,"widget_preview_container")),10000);
+            UiObject2 preview=device.wait(Until.findObject(By.desc("Monthmark · Small")),10000);
             assertNotNull("Monthmark widget preview missing",preview);
             preview.drag(new Point(device.getDisplayWidth()/2,device.getDisplayHeight()/3),500);
             capture("after-drop");
