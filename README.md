@@ -10,6 +10,14 @@ A small native Android app for the days you're looking forward to.
 - Five colours, edit/delete, next-date previews, and days-since for past fixed dates.
 - Offline, no accounts, no ads, no internet permission. Android 8.0+.
 
+## Screenshots
+
+Captured in the Android 15 cloud emulator with sample countdowns. The widget previews use Android's native widget host.
+
+<img src="docs/screenshots/app.png" alt="Monthmark app with fixed-date and last-Friday countdowns" width="260"> <img src="docs/screenshots/widget-large.png" alt="Large widget showing four countdowns" width="260">
+
+[Small widget](docs/screenshots/widget-small.png) · [Medium widget](docs/screenshots/widget-medium.png) · [Large widget](docs/screenshots/widget-large.png)
+
 ## Install
 
 Download `Monthmark.apk` from [Releases](https://github.com/mallison/monthmark-android/releases/latest) on your Android phone. Allow installation from your browser when Android asks, then open the APK.
