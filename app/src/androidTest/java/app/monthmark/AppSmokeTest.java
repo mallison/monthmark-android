@@ -16,7 +16,7 @@ import java.io.*;
 import java.time.*;
 import java.util.*;
 import app.monthmark.core.Countdown;
-import static androidx.test.espresso.Espresso.*;
+import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.*;
 import static androidx.test.espresso.assertion.ViewAssertions.*;
 import static androidx.test.espresso.matcher.ViewMatchers.*;
