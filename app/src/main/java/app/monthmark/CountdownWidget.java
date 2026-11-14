@@ -52,7 +52,7 @@ public class CountdownWidget extends AppWidgetProvider {
         for (int i=0; i<oldIds.length; i++) {
             List<String> events = store.widgetEvents(oldIds[i]);
             if (!events.isEmpty()) store.bindWidget(newIds[i],events);
-            store.removeWidget(oldIds[i]);
+            if(oldIds[i]!=newIds[i]) store.removeWidget(oldIds[i]);
         }
         updateAll(c);
     }

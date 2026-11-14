@@ -126,7 +126,7 @@ public final class MainActivity extends Activity {
             if(which==0) edit(c);
             if(which==1) pin(c);
             if(which==2) new AlertDialog.Builder(this).setTitle("Delete “"+c.title+"”?")
-                .setMessage("Widgets showing it will ask you to choose another countdown.")
+                .setMessage("It will be removed from your widgets. Empty widgets will ask you to choose another countdown.")
                 .setNegativeButton("Keep",null).setPositiveButton("Delete",(d,w) -> {new Store(this).delete(c.id);CountdownWidget.updateAll(this);render();}).show();
         }).setNeutralButton("View dates",(d,w) -> new AlertDialog.Builder(this).setTitle(c.title).setMessage(description).setPositiveButton("Done",null).show())
           .setNegativeButton("Close",null).show();
