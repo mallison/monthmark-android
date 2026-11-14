@@ -22,15 +22,20 @@ public class CountdownWidget extends AppWidgetProvider {
 
     @Override public void onReceive(Context context, Intent intent) {
         super.onReceive(context,intent);
-        if (PINNED.equals(intent.getAction())) {
+        String action=intent.getAction();
+        if (PINNED.equals(action)) {
             int id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
             ArrayList<String> events = intent.getStringArrayListExtra("event_ids");
             if (id != AppWidgetManager.INVALID_APPWIDGET_ID && events!=null) {
                 events.removeIf(eventId -> new Store(context).get(eventId)==null);
                 new Store(context).bindWidget(id,events);
             }
+            updateAll(context);
+        } else if (REFRESH.equals(action) || Intent.ACTION_BOOT_COMPLETED.equals(action)
+                || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action) || Intent.ACTION_TIME_CHANGED.equals(action)
+                || Intent.ACTION_TIMEZONE_CHANGED.equals(action) || Intent.ACTION_DATE_CHANGED.equals(action)) {
+            updateAll(context);
         }
-        updateAll(context);
     }
 
     @Override public void onUpdate(Context c, AppWidgetManager manager, int[] ids) {
@@ -45,21 +50,21 @@ public class CountdownWidget extends AppWidgetProvider {
     @Override public void onDeleted(Context c, int[] ids) {
         Store store = new Store(c);
         for (int id : ids) store.removeWidget(id);
+        schedule(c);
     }
 
     @Override public void onRestored(Context c, int[] oldIds, int[] newIds) {
         Store store = new Store(c);
         for (int i=0; i<oldIds.length; i++) {
             List<String> events = store.widgetEvents(oldIds[i]);
-            if (!events.isEmpty()) store.bindWidget(newIds[i],events);
+            if (store.isWidgetConfigured(oldIds[i])) store.bindWidget(newIds[i],events);
             if(oldIds[i]!=newIds[i]) store.removeWidget(oldIds[i]);
         }
         updateAll(c);
     }
 
     @Override public void onDisabled(Context c) {
-        AlarmManager alarm = (AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
-        alarm.cancel(refreshIntent(c));
+        schedule(c);
     }
 
     static void updateAll(Context c) {
@@ -70,6 +75,9 @@ public class CountdownWidget extends AppWidgetProvider {
 
     static void update(Context c, AppWidgetManager manager, int id) {
         Store store = new Store(c);
+        // A host owns placement until its configuration activity returns RESULT_OK.
+        // Do not replace its pending view or install a second configure PendingIntent.
+        if (!store.isWidgetConfigured(id)) return;
         List<Countdown> events = new ArrayList<>();
         for(String eventId:store.widgetEvents(id)) { Countdown event=store.get(eventId); if(event!=null) events.add(event); }
         LocalDate today=LocalDate.now();
@@ -130,10 +138,12 @@ public class CountdownWidget extends AppWidgetProvider {
     }
 
     private static void schedule(Context c) {
-        AppWidgetManager manager = AppWidgetManager.getInstance(c);
-        if (allIds(c).length == 0) return;
-        long next = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
         AlarmManager alarm = (AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
+        Store store=new Store(c);
+        boolean configured=false;
+        for(int id:allIds(c)) if(store.isWidgetConfigured(id)) { configured=true; break; }
+        if (!configured) { alarm.cancel(refreshIntent(c)); return; }
+        long next = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
         // No exact-alarm permission: Android may defer this during deep sleep.
         alarm.setAndAllowWhileIdle(AlarmManager.RTC,next,refreshIntent(c));
     }

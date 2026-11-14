@@ -32,6 +32,28 @@ public class LauncherPlacementTest {
         store.save(Countdown.monthly("launcher-payday","Payday",DayOfWeek.FRIDAY,1,1));
     }
 
+    @Test public void pendingWidgetKeepsHostPlacementViewUntilConfigured() throws Exception {
+        AppWidgetHost[] host=new AppWidgetHost[1]; int[] id=new int[1];
+        instrumentation.getUiAutomation().adoptShellPermissionIdentity("android.permission.BIND_APPWIDGET");
+        try {
+            instrumentation.runOnMainSync(() -> {
+                host[0]=new AppWidgetHost(context,5353); id[0]=host[0].allocateAppWidgetId();
+                AppWidgetManager manager=AppWidgetManager.getInstance(context);
+                assertTrue(manager.bindAppWidgetIdIfAllowed(id[0],new ComponentName(context,CountdownWidget.class)));
+                assertFalse(new Store(context).isWidgetConfigured(id[0]));
+                new CountdownWidget().onReceive(context,new Intent(AppWidgetManager.ACTION_APPWIDGET_ENABLED));
+                new CountdownWidget().onAppWidgetOptionsChanged(context,manager,id[0],new Bundle());
+                CountdownWidget.updateAll(context);
+                AppWidgetHostView view=host[0].createView(context,id[0],manager.getAppWidgetInfo(id[0]));
+                assertEquals("Monthmark",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());
+                assertFalse(new Store(context).isWidgetConfigured(id[0]));
+            });
+        } finally {
+            if(host[0]!=null) instrumentation.runOnMainSync(() -> host[0].deleteHost());
+            instrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
     @Test public void configurationReturnsSelectionToExternalHost() throws Exception {
         seed();
         AppWidgetHost[] host=new AppWidgetHost[1]; int[] id=new int[1];

@@ -72,6 +72,7 @@ final class Store {
         } catch(Exception ignored) { }
         return ids;
     }
+    boolean isWidgetConfigured(int widgetId) { return prefs.contains("widget_"+widgetId); }
     void bindWidget(int widgetId, List<String> eventIds) {
         prefs.edit().putString("widget_"+widgetId,new JSONArray(eventIds).toString()).apply();
     }
