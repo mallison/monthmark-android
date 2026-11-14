@@ -58,7 +58,7 @@ public final class MainActivity extends Activity {
         TextView brand = Ui.text(this,"◷  MONTHMARK",13,Ui.MINT); brand.setLetterSpacing(.14f); Ui.bold(brand); content.addView(brand);
         Ui.gap(content,32);
         TextView heading = Ui.text(this,configuring() ? "Pick your\ncountdown." : "Good things\nare getting closer.",34,Ui.WHITE);
-        heading.setTypeface(android.graphics.Typeface.create("sans-serif-light",0)); content.addView(heading);
+        heading.setTypeface(android.graphics.Typeface.create("sans-serif-light",android.graphics.Typeface.NORMAL)); content.addView(heading);
         Ui.gap(content,12);
         TextView sub = Ui.text(this,configuring() ? "Choose one or more. Larger widgets show more countdowns; the nearest comes first." : "Big plans. Little rituals. Every day counts.",15,Ui.MUTED);
         content.addView(sub); Ui.gap(content,32);
@@ -85,7 +85,7 @@ public final class MainActivity extends Activity {
             Ui.gap(card,6); card.addView(Ui.text(this,rule(c),12,muted)); Ui.gap(card,16);
             long days=c.days(today); LinearLayout numberRow=Ui.row(this);
             TextView number=Ui.text(this,Long.toString(Math.abs(days)),60,featured ? Ui.BG : accent);
-            number.setTypeface(android.graphics.Typeface.create("sans-serif-light",0)); number.setIncludeFontPadding(false);
+            number.setTypeface(android.graphics.Typeface.create("sans-serif-light",android.graphics.Typeface.NORMAL)); number.setIncludeFontPadding(false);
             numberRow.addView(number); TextView unit=Ui.text(this,days==0 ? "  today" : days<0 ? "  days ago" : days==1 ? "  day to go" : "  days to go",15,muted);
             numberRow.addView(unit); card.addView(numberRow); Ui.gap(card,12);
             card.addView(Ui.text(this,c.target(today).format(DATE),13,muted));
