@@ -65,6 +65,8 @@ public class LauncherPlacementTest {
     @Test public void droppedWidgetSurvivesLauncherConfiguration() throws Exception {
         seed();
         try {
+            context.startActivity(new Intent(context,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            required(By.text("Holiday"));
             device.pressHome(); device.waitForIdle();
             String launcher=device.getLauncherPackageName();
             int x=device.getDisplayWidth()/2,y=device.getDisplayHeight()/2;
