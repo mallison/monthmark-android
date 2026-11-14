@@ -137,9 +137,17 @@ public class AppSmokeTest {
         try(FileOutputStream out=new FileOutputStream(new File(folder,name))) { image.compress(Bitmap.CompressFormat.PNG,100,out); }
         image.recycle();
         // Gradle uninstalls test apps after instrumentation. Export before that cleanup.
-        String command="mkdir -p /sdcard/Download/monthmark-screenshots && cp '"+new File(folder,name).getAbsolutePath()+"' '/sdcard/Download/monthmark-screenshots/"+name+"' && echo copied";
+        String destination="/sdcard/Download/monthmark-screenshots/"+name;
+        shell("mkdir -p /sdcard/Download/monthmark-screenshots");
+        shell("cp "+new File(folder,name).getAbsolutePath()+" "+destination);
+        assertEquals(destination,shell("ls "+destination).trim());
+    }
+
+    private String shell(String command) throws IOException {
         try(InputStream output=new android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.getUiAutomation().executeShellCommand(command))) {
-            assertEquals("copied",new BufferedReader(new InputStreamReader(output)).readLine());
+            ByteArrayOutputStream bytes=new ByteArrayOutputStream(); byte[] buffer=new byte[1024]; int n;
+            while((n=output.read(buffer))!=-1) bytes.write(buffer,0,n);
+            return bytes.toString("UTF-8");
         }
     }
 }
