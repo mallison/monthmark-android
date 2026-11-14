@@ -51,9 +51,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: |
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon
-            mkdir -p screenshots
-            adb pull /sdcard/Download/monthmark-screenshots/. screenshots/
+            bash .github/emulator-tests.sh
       - name: Upload installable APK
         uses: actions/upload-artifact@v7
         with:
