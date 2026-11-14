@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Monthmark</string>
+    <string name="widget_description">Days to your next moment. Choose a countdown for each widget.</string>
+</resources>
