@@ -136,5 +136,10 @@ public class AppSmokeTest {
         Bitmap image=instrumentation.getUiAutomation().takeScreenshot(); assertNotNull(image);
         try(FileOutputStream out=new FileOutputStream(new File(folder,name))) { image.compress(Bitmap.CompressFormat.PNG,100,out); }
         image.recycle();
+        // Gradle uninstalls test apps after instrumentation. Export before that cleanup.
+        String command="mkdir -p /sdcard/Download/monthmark-screenshots && cp '"+new File(folder,name).getAbsolutePath()+"' '/sdcard/Download/monthmark-screenshots/"+name+"' && echo copied";
+        try(InputStream output=new android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.getUiAutomation().executeShellCommand(command))) {
+            assertEquals("copied",new BufferedReader(new InputStreamReader(output)).readLine());
+        }
     }
 }
