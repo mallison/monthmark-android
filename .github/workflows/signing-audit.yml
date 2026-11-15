@@ -13,8 +13,8 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
+            /home/runner/.gradle/caches
+            /home/runner/.gradle/wrapper
           key: setup-java-Linux-x64-gradle-84fc3a7ea6385c8faafd658bbf52bf095d03120d80f28a323a4b27aaf2775f26
       - name: Inspect cached signing keys without exporting private material
         run: |
