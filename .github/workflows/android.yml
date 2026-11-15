@@ -33,13 +33,17 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.MONTHMARK_DEBUG_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            mkdir -p "$HOME/.android"
-            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
-            chmod 600 "$HOME/.android/debug.keystore"
-          fi
+          test -n "$KEYSTORE_BASE64" || { echo 'Missing stable signing key; refusing to create an incompatible APK.'; exit 1; }
+          signing_file="$RUNNER_TEMP/monthmark.keystore"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$signing_file"
+          chmod 600 "$signing_file"
+          echo "MONTHMARK_KEYSTORE_PATH=$signing_file" >> "$GITHUB_ENV"
       - name: Test date rules, lint, and build APK
-        run: ./gradlew :core:test :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+        run: ./gradlew :core:test :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:signingReport --no-daemon
+      - name: Verify the published signing certificate
+        run: |
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | tee "$RUNNER_TEMP/apk-certificate.txt"
+          grep -Fqi 'cdd9e68e855692314914c26f691501acc2c94cb23e59e87ca9d3d210b29b4469' "$RUNNER_TEMP/apk-certificate.txt"
       - name: Enable hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
