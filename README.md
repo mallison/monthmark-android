@@ -24,7 +24,7 @@ Captured in the Android 16 cloud emulator with sample countdowns and a generated
 
 Download `Monthmark.apk` from [Releases](https://github.com/mallison/monthmark-android/releases/latest) on your Android phone. Allow installation from your browser when Android asks, then open the APK.
 
-Install updates over the existing app to keep your countdowns.
+**Existing v1.0 users:** v1.0 was accidentally signed with a temporary cloud key. Version 1.1 cannot install over it. Do not uninstall v1.0 until you have recorded or backed up any countdowns you want to keep; uninstalling removes its local data. The v1.1 release is held as a draft while this transition is arranged.
 
 Add a countdown, tap its card, then **Add home-screen widget**. Or touch and hold an empty space on your home screen → **Widgets** → **Monthmark**. On Android 12+, dropping a widget shows a useful default immediately: the nearest countdown for small widgets, or multiple countdowns for larger ones. **Tap the placed widget to choose its countdowns.** This avoids making successful placement depend on a launcher configuration-activity result. Older Android versions open the chooser during placement.
 
@@ -32,7 +32,7 @@ Touch and hold a widget to resize it. Each widget has its own selection. To pers
 
 Widget dimensions depend on your launcher. There is no ongoing background service: date refreshes use a midnight alarm and Android's periodic widget update. Android can defer updates during deep sleep or aggressive battery saving.
 
-The supplied APK is a debug-signed personal build, not a Play Store release. The original repository keeps a stable signing key in a GitHub Actions secret, so later builds can update the app while keeping data. Forks need their own stable signing key. Android device backup may include the app's local preferences if enabled on your phone.
+The supplied APK is a debug-signed personal build, not a Play Store release. From v1.1, the original repository explicitly selects a stable signing key from a GitHub Actions secret and checks the built APK's certificate. Future builds using this key can update v1.1 while keeping data. Forks need their own stable signing key and expected certificate fingerprint. Android device backup may include the app's local preferences if enabled on your phone, but it cannot be relied on across a signing-key change.
 
 ## Build entirely in the cloud
 
@@ -54,4 +54,4 @@ Java 17+, Gradle 8.9 (wrapper included), Android SDK 35. Set `ANDROID_HOME`, or 
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-To preserve APK update compatibility in another repository, generate your own Android debug keystore and save its base64 encoding as the Actions secret `MONTHMARK_DEBUG_KEYSTORE_BASE64`. Never commit the keystore. There are no API keys or runtime services to configure.
+To preserve APK update compatibility in another repository, generate your own Android debug keystore and save its base64 encoding as the Actions secret `MONTHMARK_DEBUG_KEYSTORE_BASE64`. Set its expected SHA-256 certificate fingerprint in the workflow's certificate check. The workflow passes the private file through `MONTHMARK_KEYSTORE_PATH`; local builds without that variable use Android's development key. Never commit the keystore. There are no API keys or runtime services to configure.
