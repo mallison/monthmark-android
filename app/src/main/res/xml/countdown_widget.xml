@@ -3,5 +3,5 @@
     android:targetCellWidth="2" android:targetCellHeight="2"
     android:updatePeriodMillis="1800000" android:initialLayout="@layout/countdown_widget"
     android:previewLayout="@layout/countdown_widget" android:description="@string/widget_description"
-    android:configure="app.monthmark.MainActivity" android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen" android:widgetFeatures="reconfigurable" />
+    android:configure="app.monthmark.WidgetConfigurationActivity" android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" android:widgetFeatures="reconfigurable|configuration_optional" />

@@ -8,7 +8,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" /></intent-filter>
+        </activity>
+        <activity android:name=".WidgetConfigurationActivity" android:exported="true"
+            android:taskAffinity="" android:excludeFromRecents="true" android:launchMode="standard">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
         <activity android:name=".EditorActivity" android:exported="false" />
         <receiver android:name=".CountdownWidget" android:exported="false" android:label="Monthmark · Small">

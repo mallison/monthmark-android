@@ -28,11 +28,12 @@ public class LauncherPlacementTest {
     private void seed() {
         Store store=new Store(context);
         for(Countdown c:store.all()) store.delete(c.id);
-        store.save(Countdown.fixed("launcher-holiday","Holiday",LocalDate.now().plusDays(10),0));
+        store.save(Countdown.fixed("launcher-holiday","Holiday",LocalDate.now(),0));
         store.save(Countdown.monthly("launcher-payday","Payday",DayOfWeek.FRIDAY,1,1));
     }
 
-    @Test public void pendingWidgetKeepsHostPlacementViewUntilConfigured() throws Exception {
+    @Test public void optionalPlacementUsesNearestAndPreservesExplicitSelection() throws Exception {
+        seed();
         AppWidgetHost[] host=new AppWidgetHost[1]; int[] id=new int[1];
         instrumentation.getUiAutomation().adoptShellPermissionIdentity("android.permission.BIND_APPWIDGET");
         try {
@@ -40,13 +41,15 @@ public class LauncherPlacementTest {
                 host[0]=new AppWidgetHost(context,5353); id[0]=host[0].allocateAppWidgetId();
                 AppWidgetManager manager=AppWidgetManager.getInstance(context);
                 assertTrue(manager.bindAppWidgetIdIfAllowed(id[0],new ComponentName(context,CountdownWidget.class)));
-                assertFalse(new Store(context).isWidgetConfigured(id[0]));
-                new CountdownWidget().onReceive(context,new Intent(AppWidgetManager.ACTION_APPWIDGET_ENABLED));
+                new CountdownWidget().onUpdate(context,manager,new int[]{id[0]});
+                assertTrue(new Store(context).isWidgetConfigured(id[0]));
+                assertEquals(Collections.singletonList("launcher-holiday"),new Store(context).widgetEvents(id[0]));
+                new Store(context).bindWidget(id[0],Collections.singletonList("launcher-payday"));
                 new CountdownWidget().onAppWidgetOptionsChanged(context,manager,id[0],new Bundle());
                 CountdownWidget.updateAll(context);
                 AppWidgetHostView view=host[0].createView(context,id[0],manager.getAppWidgetInfo(id[0]));
-                assertEquals("Monthmark",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());
-                assertFalse(new Store(context).isWidgetConfigured(id[0]));
+                assertEquals("Payday",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());
+                assertEquals(Collections.singletonList("launcher-payday"),new Store(context).widgetEvents(id[0]));
             });
         } finally {
             if(host[0]!=null) instrumentation.runOnMainSync(() -> host[0].deleteHost());
@@ -62,10 +65,11 @@ public class LauncherPlacementTest {
             instrumentation.runOnMainSync(() -> {
                 host[0]=new AppWidgetHost(context,5252); id[0]=host[0].allocateAppWidgetId();
                 assertTrue(AppWidgetManager.getInstance(context).bindAppWidgetIdIfAllowed(id[0],new ComponentName(context,MediumWidget.class)));
+                new Store(context).bindWidget(id[0],Collections.emptyList());
             });
         } finally { instrumentation.getUiAutomation().dropShellPermissionIdentity(); }
         try {
-            Intent configure=new Intent(context,MainActivity.class).setAction(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+            Intent configure=new Intent().setComponent(AppWidgetManager.getInstance(context).getAppWidgetInfo(id[0]).configure).setAction(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id[0]);
             try(ActivityScenario<MainActivity> activity=ActivityScenario.launchActivityForResult(configure)) {
                 required(By.text("Holiday")).click();
@@ -103,11 +107,16 @@ public class LauncherPlacementTest {
             assertNotNull("Monthmark widget preview missing",preview);
             preview.drag(new Point(device.getDisplayWidth()/2,device.getDisplayHeight()/3),500);
             capture("after-drop");
-            required(By.text("Holiday")).click();
-            required(By.text("Use selected (1)")).click();
             device.pressHome(); device.waitForIdle();
             assertNotNull("Dropped widget must remain on the launcher",device.wait(Until.findObject(By.res("app.monthmark","widget_title").text("Holiday")),10000));
             capture("placed-widget");
+            required(By.res("app.monthmark","widget_title").text("Holiday")).click();
+            required(By.text("Holiday")).click();
+            device.swipe(device.getDisplayWidth()/2,device.getDisplayHeight()*3/4,device.getDisplayWidth()/2,device.getDisplayHeight()/3,25);
+            required(By.text("Payday")).click();
+            required(By.text("Use selected (1)")).click();
+            device.pressHome(); device.waitForIdle();
+            assertNotNull("Changing the countdown must retain the placed widget",device.wait(Until.findObject(By.res("app.monthmark","widget_title").text("Payday")),10000));
         } finally { capture("launcher-final"); }
     }
 
@@ -128,7 +137,9 @@ public class LauncherPlacementTest {
         File folder=new File(context.getExternalFilesDir(null),"diagnostics"); folder.mkdirs();
         device.takeScreenshot(new File(folder,name+".png"));
         device.dumpWindowHierarchy(new File(folder,name+".xml"));
-        try(FileOutputStream out=new FileOutputStream(new File(folder,name+"-logcat.txt"))) { out.write(shell("logcat -d -v threadtime").getBytes("UTF-8")); }
+        try(FileOutputStream out=new FileOutputStream(new File(folder,name+"-logcat.txt"))) {
+            out.write(shell("logcat -d -v threadtime ActivityTaskManager:I AppWidgetServiceImpl:I Launcher:E ProxyActivityStarter:V AndroidRuntime:E TestRunner:I *:S").getBytes("UTF-8"));
+        }
         shell("mkdir -p /sdcard/Download/monthmark-screenshots");
         for(File file:Objects.requireNonNull(folder.listFiles())) shell("cp "+file.getAbsolutePath()+" /sdcard/Download/monthmark-screenshots/"+file.getName());
     }

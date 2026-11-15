@@ -58,4 +58,9 @@ public class CountdownTest {
     @Test(expected=IllegalArgumentException.class) public void rejectsImpossibleOffset() {
         Countdown.monthly("x", "Test", DayOfWeek.MONDAY, 5, 0);
     }
+    @Test public void appearanceKeepsDateRuleAndIdentity() {
+        Countdown styled=friday().withAppearance("💷","photo:test.jpg");
+        assertEquals("pay",styled.id); assertEquals("💷",styled.icon); assertEquals("photo:test.jpg",styled.background);
+        assertEquals(friday().target(LocalDate.of(2026,11,28)),styled.target(LocalDate.of(2026,11,28)));
+    }
 }

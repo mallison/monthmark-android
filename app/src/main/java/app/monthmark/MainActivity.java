@@ -18,8 +18,8 @@ import java.time.format.TextStyle;
 import java.util.*;
 import app.monthmark.core.Countdown;
 
-public final class MainActivity extends Activity {
-    public static final int[] ACCENTS = {0xffbbf5cc,0xffc9c2ff,0xffffd29e,0xffa8d9f5,0xffffb9bf};
+public class MainActivity extends Activity {
+    public static final int[] ACCENTS = Appearance.COLORS;
     private int widgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
     private final LinkedHashSet<String> selected=new LinkedHashSet<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -29,9 +29,9 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         widgetId = getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID);
-        if(state!=null) selected.addAll(state.getStringArrayList("selected"));
+        if(state!=null && state.getStringArrayList("selected")!=null) selected.addAll(state.getStringArrayList("selected"));
         else if(configuring()) selected.addAll(new Store(this).widgetEvents(widgetId));
-        if (configuring()) setResult(RESULT_CANCELED);
+        if (configuring()) setResult(RESULT_CANCELED,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));
         render();
         if (!configuring() && state == null) {
             Countdown event = new Store(this).get(getIntent().getStringExtra("event_id"));
@@ -39,6 +39,17 @@ public final class MainActivity extends Activity {
         }
     }
     private boolean configuring() { return widgetId != AppWidgetManager.INVALID_APPWIDGET_ID; }
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent); setIntent(intent);
+        widgetId=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID);
+        selected.clear();
+        if(configuring()) {
+            selected.addAll(new Store(this).widgetEvents(widgetId));
+            setResult(RESULT_CANCELED,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));
+        }
+        render();
+        if(!configuring()) { Countdown event=new Store(this).get(intent.getStringExtra("event_id")); if(event!=null) details(event); }
+    }
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state); state.putStringArrayList("selected",new ArrayList<>(selected));
     }
@@ -56,12 +67,12 @@ public final class MainActivity extends Activity {
         LinearLayout content = Ui.column(this); content.setPadding(Ui.dp(this,24),Ui.dp(this,24),Ui.dp(this,24),Ui.dp(this,24));
         scroll.addView(content); root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         TextView brand = Ui.text(this,"◷  MONTHMARK",13,Ui.MINT); brand.setLetterSpacing(.14f); Ui.bold(brand); content.addView(brand);
-        Ui.gap(content,32);
-        TextView heading = Ui.text(this,configuring() ? "Pick your\ncountdown." : "Good things\nare getting closer.",34,Ui.WHITE);
+        Ui.gap(content,20);
+        TextView heading = Ui.text(this,configuring() ? "Pick your\ncountdown." : "Good things ahead.",28,Ui.WHITE);
         heading.setTypeface(android.graphics.Typeface.create("sans-serif-light",android.graphics.Typeface.NORMAL)); content.addView(heading);
         Ui.gap(content,12);
         TextView sub = Ui.text(this,configuring() ? "Choose one or more. Larger widgets show more countdowns; the nearest comes first." : "Big plans. Little rituals. Every day counts.",15,Ui.MUTED);
-        content.addView(sub); Ui.gap(content,32);
+        content.addView(sub); Ui.gap(content,24);
         List<Countdown> events = new Store(this).all(); LocalDate today = LocalDate.now();
         // Upcoming first, past fixed dates last; nearest occurrence first within each group.
         events.sort(Comparator.comparing((Countdown c) -> c.days(today)<0).thenComparingLong(c -> Math.abs(c.days(today))).thenComparing(c -> c.title));
@@ -76,15 +87,18 @@ public final class MainActivity extends Activity {
         }
         for (int i=0; i<events.size(); i++) {
             Countdown c = events.get(i);
-            boolean featured = i==0 && c.days(today)>=0;
             LinearLayout card = Ui.column(this); int accent=ACCENTS[Math.floorMod(c.color,ACCENTS.length)];
-            card.setBackground(Ui.shape(featured ? accent : Ui.CARD,24,this)); card.setPadding(Ui.dp(this,22),Ui.dp(this,20),Ui.dp(this,22),Ui.dp(this,20));
-            int fg=featured ? Ui.BG : Ui.WHITE, muted=featured ? 0xff3e5947 : Ui.MUTED;
-            LinearLayout top = Ui.row(this); TextView name=Ui.text(this,c.title,19,fg); Ui.bold(name);
+            card.setBackground(Appearance.background(this,c)); card.setPadding(Ui.dp(this,22),Ui.dp(this,20),Ui.dp(this,22),Ui.dp(this,20));
+            boolean photo=Appearance.photo(this,c.background);
+            int fg=photo ? Ui.WHITE : Ui.BG, muted=photo ? 0xffe5eee8 : 0xff344b40;
+            LinearLayout top = Ui.row(this); TextView icon=Ui.text(this,c.icon,28,fg); icon.setContentDescription("Countdown icon");
+            LinearLayout.LayoutParams iconParams=new LinearLayout.LayoutParams(Ui.dp(this,44),Ui.dp(this,44)); iconParams.setMarginEnd(Ui.dp(this,12));
+            icon.setGravity(Gravity.CENTER); icon.setBackground(Ui.shape(photo ? 0x44101613 : 0x66ffffff,14,this)); top.addView(icon,iconParams);
+            TextView name=Ui.text(this,c.title,19,fg); Ui.bold(name);
             top.addView(name,new LinearLayout.LayoutParams(0,-2,1)); TextView arrow=Ui.text(this,configuring() ? selected.contains(c.id) ? "☑" : "☐" : "↗",24,fg); top.addView(arrow); card.addView(top);
             Ui.gap(card,6); card.addView(Ui.text(this,rule(c),12,muted)); Ui.gap(card,16);
             long days=c.days(today); LinearLayout numberRow=Ui.row(this);
-            TextView number=Ui.text(this,Long.toString(Math.abs(days)),60,featured ? Ui.BG : accent);
+            TextView number=Ui.text(this,Long.toString(Math.abs(days)),56,fg);
             number.setTypeface(android.graphics.Typeface.create("sans-serif-light",android.graphics.Typeface.NORMAL)); number.setIncludeFontPadding(false);
             numberRow.addView(number); TextView unit=Ui.text(this,days==0 ? "  today" : days<0 ? "  days ago" : days==1 ? "  day to go" : "  days to go",15,muted);
             numberRow.addView(unit); card.addView(numberRow); Ui.gap(card,12);
@@ -127,7 +141,7 @@ public final class MainActivity extends Activity {
             if(which==1) pin(c);
             if(which==2) new AlertDialog.Builder(this).setTitle("Delete “"+c.title+"”?")
                 .setMessage("It will be removed from your widgets. Empty widgets will ask you to choose another countdown.")
-                .setNegativeButton("Keep",null).setPositiveButton("Delete",(d,w) -> {new Store(this).delete(c.id);CountdownWidget.updateAll(this);render();}).show();
+                .setNegativeButton("Keep",null).setPositiveButton("Delete",(d,w) -> {new Store(this).delete(c.id); Appearance.deleteIfUnused(this,c.background); CountdownWidget.updateAll(this);render();}).show();
         }).setNeutralButton("View dates",(d,w) -> new AlertDialog.Builder(this).setTitle(c.title).setMessage(description).setPositiveButton("Done",null).show())
           .setNegativeButton("Close",null).show();
     }

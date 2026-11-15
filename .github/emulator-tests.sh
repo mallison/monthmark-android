@@ -7,4 +7,5 @@ collect() {
   adb shell dumpsys appwidget > screenshots/widget-state.txt || true
 }
 trap collect EXIT
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME
 ./gradlew :app:connectedDebugAndroidTest --no-daemon

@@ -23,8 +23,9 @@ final class Store {
                     JSONObject o = array.getJSONObject(i);
                     String id = o.getString("id"), title = o.getString("title");
                     int color = o.optInt("color", 0);
-                    result.add(o.has("date") ? Countdown.fixed(id, title, LocalDate.parse(o.getString("date")), color)
-                        : Countdown.monthly(id, title, DayOfWeek.of(o.getInt("weekday")), o.getInt("fromEnd"), color));
+                    Countdown event=o.has("date") ? Countdown.fixed(id, title, LocalDate.parse(o.getString("date")), color)
+                        : Countdown.monthly(id, title, DayOfWeek.of(o.getInt("weekday")), o.getInt("fromEnd"), color);
+                    result.add(event.withAppearance(o.optString("icon","✨"),o.optString("background","")));
                 } catch (Exception ignored) { /* A malformed entry must not hide the remaining events. */ }
             }
         } catch (Exception ignored) { }
@@ -55,7 +56,7 @@ final class Store {
         for (Countdown c : events) {
             JSONObject o = new JSONObject();
             try {
-                o.put("id",c.id).put("title",c.title).put("color",c.color);
+                o.put("id",c.id).put("title",c.title).put("color",c.color).put("icon",c.icon).put("background",c.background);
                 if (c.isMonthly()) o.put("weekday",c.weekday.getValue()).put("fromEnd",c.fromEnd);
                 else o.put("date",c.fixedDate.toString());
                 array.put(o);

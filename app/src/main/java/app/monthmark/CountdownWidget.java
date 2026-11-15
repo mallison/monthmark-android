@@ -39,11 +39,12 @@ public class CountdownWidget extends AppWidgetProvider {
     }
 
     @Override public void onUpdate(Context c, AppWidgetManager manager, int[] ids) {
-        for (int id : ids) update(c,manager,id);
+        for (int id : ids) { configureDefault(c,manager,id); update(c,manager,id); }
         schedule(c);
     }
 
     @Override public void onAppWidgetOptionsChanged(Context c, AppWidgetManager manager, int id, Bundle options) {
+        configureDefault(c,manager,id);
         update(c,manager,id);
     }
 
@@ -90,8 +91,10 @@ public class CountdownWidget extends AppWidgetProvider {
         int capacity=height>=300 ? 4 : height>=230 ? 3 : width>=200 && height>=145 ? 2 : 1;
         boolean list=events.size()>1 && capacity>1;
         RemoteViews views = new RemoteViews(c.getPackageName(), list ? R.layout.countdown_list_widget : R.layout.countdown_widget);
-        Intent open = new Intent(c, MainActivity.class);
+        Intent open = new Intent(c, WidgetConfigurationActivity.class)
+            .setAction(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id);
         if (event == null) {
+            open.setClass(c,WidgetConfigurationActivity.class);
             views.setTextViewText(R.id.widget_title,"Choose a countdown");
             views.setTextViewText(R.id.widget_days,"+");
             views.setTextViewText(R.id.widget_unit,"Tap to set up");
@@ -105,25 +108,34 @@ public class CountdownWidget extends AppWidgetProvider {
                 int[] titles={R.id.title_1,R.id.title_2,R.id.title_3,R.id.title_4};
                 int[] numbers={R.id.days_1,R.id.days_2,R.id.days_3,R.id.days_4};
                 int[] dates={R.id.date_1,R.id.date_2,R.id.date_3,R.id.date_4};
+                int[] icons={R.id.icon_1,R.id.icon_2,R.id.icon_3,R.id.icon_4};
+                int[] backgrounds={R.id.background_1,R.id.background_2,R.id.background_3,R.id.background_4};
                 int shown=Math.min(capacity,events.size());
                 for(int i=0;i<4;i++) {
                     views.setViewVisibility(rows[i],i<shown ? android.view.View.VISIBLE : android.view.View.GONE);
                     if(i>=shown) continue;
                     Countdown item=events.get(i); long remaining=item.days(today);
+                    boolean photo=Appearance.photo(c,item.background); int foreground=photo ? Ui.WHITE : Ui.BG;
+                    views.setImageViewBitmap(backgrounds[i],Appearance.widgetBackground(c,item,Math.max(100,width-20),Math.max(40,(height-42)/shown)));
+                    views.setTextViewText(icons[i],item.icon);
                     views.setTextViewText(titles[i],item.title);
                     views.setTextViewText(numbers[i],remaining==0 ? "Today" : Math.abs(remaining)+(remaining<0 ? "d ago" : "d"));
                     views.setTextViewText(dates[i],item.target(today).format(DateTimeFormatter.ofPattern("EEE, d MMM",Locale.getDefault())));
-                    views.setTextColor(numbers[i],MainActivity.ACCENTS[Math.floorMod(item.color,MainActivity.ACCENTS.length)]);
+                    views.setTextColor(numbers[i],foreground); views.setTextColor(titles[i],foreground);
+                    views.setTextColor(dates[i],photo ? 0xffe5eee8 : 0xff344b40);
                 }
                 views.setTextViewText(R.id.list_heading,"MONTHMARK"+(events.size()>shown ? "  ·  +"+(events.size()-shown)+" more" : ""));
             } else {
+                boolean photo=Appearance.photo(c,event.background); int foreground=photo ? Ui.WHITE : Ui.BG;
+                views.setImageViewBitmap(R.id.widget_background_image,Appearance.widgetBackground(c,event,width,height));
+                views.setTextViewText(R.id.widget_icon,event.icon);
                 views.setTextViewText(R.id.widget_title,event.title);
                 views.setTextViewText(R.id.widget_days,Long.toString(Math.abs(days)));
                 views.setTextViewText(R.id.widget_unit, days == 0 ? "today" : days < 0 ? "days ago" : days == 1 ? "day to go" : "days to go");
                 String datePattern=events.size()>1 ? "d MMM" : "EEE, d MMM";
                 views.setTextViewText(R.id.widget_date,event.target(today).format(DateTimeFormatter.ofPattern(datePattern,Locale.getDefault()))+(events.size()>1 ? "  ·  +"+(events.size()-1)+" more" : ""));
-                views.setTextColor(R.id.widget_days,MainActivity.ACCENTS[Math.floorMod(event.color,MainActivity.ACCENTS.length)]);
-                open.putExtra("event_id",event.id);
+                views.setTextColor(R.id.widget_days,foreground); views.setTextColor(R.id.widget_title,foreground);
+                views.setTextColor(R.id.widget_unit,photo ? 0xffe5eee8 : 0xff344b40); views.setTextColor(R.id.widget_date,photo ? 0xffe5eee8 : 0xff344b40);
             }
         }
         open.setData(android.net.Uri.parse("monthmark://widget/"+id));
@@ -131,6 +143,20 @@ public class CountdownWidget extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_root,tap);
         views.setContentDescription(R.id.widget_root,event == null ? "Choose a countdown" : event.title + ", " + Math.abs(event.days(LocalDate.now())) + " days " + (event.days(LocalDate.now()) < 0 ? "ago" : "remaining"));
         manager.updateAppWidget(id,views);
+    }
+
+    private static void configureDefault(Context c,AppWidgetManager manager,int id) {
+        Store store=new Store(c);
+        if(store.isWidgetConfigured(id) || android.os.Build.VERSION.SDK_INT<31) return;
+        android.appwidget.AppWidgetProviderInfo info=manager.getAppWidgetInfo(id);
+        if(info==null || (info.widgetFeatures & android.appwidget.AppWidgetProviderInfo.WIDGET_FEATURE_CONFIGURATION_OPTIONAL)==0) return;
+        LocalDate today=LocalDate.now(); List<Countdown> events=store.all();
+        events.sort(Comparator.comparing((Countdown event) -> event.days(today)<0).thenComparingLong(event -> Math.abs(event.days(today))));
+        List<String> selected=new ArrayList<>();
+        boolean single=info.provider.equals(new ComponentName(c,CountdownWidget.class));
+        for(Countdown event:events) { selected.add(event.id); if(single) break; }
+        // A useful initial view lets modern launchers finish placement without waiting for an activity result.
+        store.bindWidget(id,selected);
     }
 
     private static PendingIntent refreshIntent(Context c) {

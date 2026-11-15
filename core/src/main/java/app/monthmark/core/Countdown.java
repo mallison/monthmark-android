@@ -17,8 +17,14 @@ public final class Countdown {
     public final DayOfWeek weekday;
     public final int fromEnd;
     public final int color;
+    public final String icon;
+    public final String background;
 
     private Countdown(String id, String title, LocalDate fixedDate, DayOfWeek weekday, int fromEnd, int color) {
+        this(id,title,fixedDate,weekday,fromEnd,color,"✨","");
+    }
+
+    private Countdown(String id, String title, LocalDate fixedDate, DayOfWeek weekday, int fromEnd, int color, String icon, String background) {
         this.id = Objects.requireNonNull(id);
         this.title = Objects.requireNonNull(title).trim();
         if (this.title.isEmpty()) throw new IllegalArgumentException("Give your countdown a name");
@@ -26,6 +32,8 @@ public final class Countdown {
         this.weekday = weekday;
         this.fromEnd = fromEnd;
         this.color = color;
+        this.icon = icon == null || icon.isEmpty() ? "✨" : icon;
+        this.background = background == null ? "" : background;
     }
 
     public static Countdown fixed(String id, String title, LocalDate date, int color) {
@@ -38,6 +46,10 @@ public final class Countdown {
     }
 
     public boolean isMonthly() { return weekday != null; }
+
+    public Countdown withAppearance(String icon, String background) {
+        return new Countdown(id,title,fixedDate,weekday,fromEnd,color,icon,background);
+    }
 
     public LocalDate inMonth(YearMonth month) {
         if (!isMonthly()) throw new IllegalStateException("This countdown uses a fixed date");
